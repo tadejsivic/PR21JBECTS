@@ -1,11 +1,8 @@
 import time
 
-from operator import itemgetter
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-# import Orange
 
 # Spremenljivke za uporabljene stolpce
 prva_reg = '2A-Datum prve registracije vozila v SLO'
@@ -52,8 +49,6 @@ def main():
     print("____________ WELCOME TO DATA ANALYZER ____________")
     print("Reading data.....")
     data = load_data()
-    # avg_calculations(data)
-    # popular_car_brands(data)
     people_analysis(data)
 
 
@@ -70,20 +65,58 @@ def people_analysis(data):
     # age groups 16-24, 25-34, 35-44, 45-54, 55-64, 65+
     age_data = data[starost_upoabnika].to_numpy()
     brand_data = data[znamka].to_numpy()
-    result = np.column_stack((age_data, brand_data))
-    result = result[~np.isnan(age_data)]
+    consumption_data = data[poraba].to_numpy()
+    power_data = data[moc].to_numpy()
 
-    young = np.array([x for x in result if 16 <= x[0] < 25])
-    popular_car_brands(young[:, 1], "mlade (16-24)")
-    young_adult = np.array([x for x in result if 25 <= x[0] < 35])
-    adult = np.array([x for x in result if 35 <= x[0] < 45])
-    middle_aged = np.array([x for x in result if 45 <= x[0] < 55])
-    senior = np.array([x for x in result if 55 <= x[0] < 65])
-    elder = np.array([x for x in result if 65 <= x[0] < 90])
-    popular_car_brands(elder[:, 1], "starejse (65+)")
+    result = np.array((age_data, brand_data, consumption_data, power_data), dtype="object")
+
+    # TODO:fix this shit
+    mask = ~np.isnan(age_data)
+    age_data = result[0][mask]
+    brand_data = result[1][mask]
+    consumption_data = result[2][mask]
+    power_data = result[3][mask]
+    result = np.array((age_data, brand_data, consumption_data, power_data), dtype="object")
 
     age_groups = ["16-24", "25-34", "35-44", "45-54", "55-64", "65+"]
-    number_of_drivers = [len(young) / len(result), len(young_adult) / len(result), len(adult) / len(result), len(middle_aged) / len(result), len(senior) / len(result), len(elder) / len(result)]
+
+    # Getting data by age group
+    young = result[:, (12 <= result[0]) & (result[0] < 25)]
+    young_adult = result[:, (25 <= result[0]) & (result[0] < 34)]
+    adult = result[:, (35 <= result[0]) & (result[0] < 44)]
+    middle_aged = result[:, (45 <= result[0]) & (result[0] < 54)]
+    senior = result[:, (55 <= result[0]) & (result[0] < 64)]
+    elder = result[:, (65 <= result[0]) & (result[0] < 90)]
+
+    # Showing data of popular car brands by age group
+    popular_car_brands(young[1], "mlade (12-24)")
+    popular_car_brands(elder[1], "starejse (65+)")
+
+    # calculating average consumption by age group and visualizing it
+    avg_consumption_by_age_group = [avg_consumption(young[2], False), avg_consumption(young_adult[2], False),
+                                    avg_consumption(adult[2], False), avg_consumption(middle_aged[2], False),
+                                    avg_consumption(senior[2], False), avg_consumption(elder[2], False)]
+    plt.bar(age_groups, avg_consumption_by_age_group)
+    plt.xlabel("Starostne skupine")
+    plt.ylabel("povprecna poraba")
+    plt.title("povprecna poraba posamezne starostne skupine")
+    plt.axhline(np.mean(avg_consumption_by_age_group), color='k', linestyle='dashed', linewidth=2)
+    plt.show()
+
+    # calculating average vehicle power by age group
+    avg_power_by_age_group = [avg_power(young[3]), avg_power(young_adult[3]), avg_power(adult[3]), avg_power(middle_aged[3]), avg_power(senior[3]), avg_power(elder[3])]
+    plt.bar(age_groups, avg_power_by_age_group)
+    plt.xlabel("Starostne skupine")
+    plt.ylabel("povprecna moc vozil (kW)")
+    plt.title("povprecna moc vozil posamezne starostne skupine")
+    plt.axhline(np.mean(avg_power_by_age_group), color='k', linestyle='dashed', linewidth=2)
+    plt.show()
+
+
+    number_of_drivers = [len(young[0]) / len(result[0]), len(young_adult[0]) / len(result[0]),
+                         len(adult[0]) / len(result[0]),
+                         len(middle_aged[0]) / len(result[0]), len(senior[0]) / len(result[0]),
+                         len(elder[0]) / len(result[0])]
 
     plt.bar(age_groups, number_of_drivers)
     plt.xlabel("Starostne skupine")
@@ -92,6 +125,12 @@ def people_analysis(data):
     plt.show()
 
 
+def avg_power(data):
+    data = data.astype('float64')
+    power_data = data[~np.isnan(data)]
+    power_data = [x for x in power_data if 0 < x < 1000]
+    return np.mean(power_data)
+
 def popular_car_brands(data, bar_title):
     # Load all car brands data and replace 'MERCEDES-BENZ' with 'MERCEDEZ BENZ' to remove duplicate columns
     car_brands = [x if (x != "MERCEDES-BENZ") else "MERCEDES BENZ" for x in data]
@@ -99,7 +138,7 @@ def popular_car_brands(data, bar_title):
     unique, counts = np.unique(car_brands, return_counts=True)
     result = np.column_stack((unique, counts))
     result = sorted(result, key=lambda x: x[1], reverse=True)
-    result = [x for x in result if x[1] > 0.01*len(car_brands)]  # Only use the more popular brands for a nice graph
+    result = [x for x in result if x[1] > 0.01 * len(car_brands)]  # Only use the more popular brands for a nice graph
     fig = plt.figure(figsize=(10, 10))
     brands = [x[0] for x in result]
     brand_count = [x[1] / len(car_brands) for x in result]  # turn the numbers into %
@@ -110,25 +149,24 @@ def popular_car_brands(data, bar_title):
     plt.title("Delez registriranih vozil posamezne znamke za " + bar_title)
     plt.show()
 
-    print("---------10 najbolj popularnih znamk v sloveniji za " + bar_title +"-----------")
+    print("---------10 najbolj popularnih znamk v sloveniji za " + bar_title + "-----------")
     for index, element in enumerate([x[0] for x in result[:10]]):
         print(str(index + 1) + ".", element)
 
 
-def avg_calculations(data):
-    poraba_data = data[poraba].to_numpy()
-    komerc_oznaka_data = data[komerc_oznaka].to_numpy()
-    skupaj = np.array(list(zip(poraba_data, komerc_oznaka_data)))
-    skupaj = skupaj[~np.isnan(poraba_data)]
-    data_sorted = sorted(skupaj, key=lambda x: float(x[0]), reverse=True)
-    avg_poraba = np.mean([float(x[0]) for x in data_sorted[200:]])
-
-    plt.figure(figsize=(12, 12))
-    plt.hist([float(x[0]) for x in data_sorted[200:]], label="Poraba avtov", density=False, bins=20)
-    plt.xlabel("poraba")
-    plt.ylabel("število vozil")
-    plt.axvline(avg_poraba, color='k', linestyle='dashed', linewidth=2)
-    plt.show()
+def avg_consumption(data, show_graph):
+    data = data.astype('float64')
+    consumption_data = data[~np.isnan(data)]
+    data_sorted = sorted(consumption_data, reverse=True)
+    avg_poraba = np.mean([x for x in data_sorted if x < 15])
+    if show_graph:
+        plt.figure(figsize=(12, 12))
+        plt.hist([x for x in data_sorted if x < 15], label="Poraba avtov", density=False)
+        plt.xlabel("poraba")
+        plt.ylabel("število vozil")
+        plt.axvline(avg_poraba, color='k', linestyle='dashed', linewidth=2)
+        plt.show()
+    return avg_poraba
 
 
 if __name__ == '__main__':
