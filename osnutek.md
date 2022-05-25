@@ -9,7 +9,7 @@ Podatki so bili dobljeni s spletne strani [OPSI](https://podatki.gov.si/dataset/
 
 V podatkih so zapisane vse tehnične lastnosti registriranega vozila, kje in kdaj je bilo vozilo kupljeno in nekateri osebni podatki uporabnika (ni zelo osebnih podatkov, le starost in spol). Uporabnik je fizična ali pravna oseba.
 
-Podatki so v datoteki CSV. 
+Podatki so na Google Drive (prečiščena oblika) [Podatki](https://drive.google.com/drive/folders/1wU269sEra5eAda8MIbeIAdQyOo2jkerb?usp=sharing)
 
 
 ### Sodelujoči:
