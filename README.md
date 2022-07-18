@@ -1,4 +1,4 @@
-# PR21JBECTS
+# Analiza Registriranih Vozil v Sloveniji (za leto 2021) - Prej imenovano _PR21JBECTS_ 
 Data Mining project at University of Ljubljana
 
 ## Vmesno poročilo:
